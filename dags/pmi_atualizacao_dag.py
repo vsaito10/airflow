@@ -12,13 +12,6 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import re
 
-
-default_args = {
-    'owner': 'vitor',
-    'retries': 1,
-    'retry_delay': timedelta(minutes=1)
-}
-
 """
 URLs:
 PMI Serviços - https://br.investing.com/economic-calendar/services-pmi-1062
@@ -28,9 +21,10 @@ PMI ISM Industrial - https://br.investing.com/economic-calendar/ism-manufacturin
 
 Neste código:
 - Atualizar o ip do selenium remoto entrando em: http://localhost:4444/ui
-- Preciso mudar a URL do PMI
-- O 'filename' tem que ser escrito na 'web_scraping_table_task' -> op_args=['pmi_industrial_ism']
-- Olhar como está o layout da tabela no site Investing em relação ao dado mais recente.
+- Preciso mudar os kwargs da dag 'web_scraping_table_task':
+    - 'filename':'pmi_servicos'
+    - 'pmi_url': 'https://br.investing.com/economic-calendar/services-pmi-1062'
+    
 Ele pode estar na primeira linha, segunda linha ou até na terceira linha. Como eu inverto as 
 informações da tabela no dataframe
 - se o último PMI lançado está na primeira linha da tabela. Então é a última linha do dataframe -> df = df.iloc[:-1]
@@ -40,7 +34,14 @@ informações da tabela no dataframe
 """
 
 
-def web_scraping_table(filename):
+default_args = {
+    'owner': 'vitor',
+    'retries': 1,
+    'retry_delay': timedelta(minutes=1)
+}
+
+
+def web_scraping_table(filename, pmi_url):
     options = Options()
     options.add_argument("--incognito")
 
@@ -49,7 +50,7 @@ def web_scraping_table(filename):
         options=options
     )
 
-    url = 'https://br.investing.com/economic-calendar/ism-manufacturing-pmi-173'
+    url = pmi_url
     tipo_pmi = re.search(r"-(\d+)$", url).group(1)
 
     driver.get(url)
@@ -143,7 +144,9 @@ def web_scraping_table(filename):
     # Definindo coluna 'lancamento' como o index do df
     df_ultimo_dado = df_ultimo_dado.set_index('lancamento')
     # Selecionando apenas a data retirando o horário (00:00:00)
-    df_ultimo_dado.index = df_ultimo_dado.index.date
+    df_ultimo_dado.index = df_ultimo_dado.index.date 
+    # Renomeando o nome do index para 'Unnamed: 0'
+    df_ultimo_dado.index.name = 'Unnamed: 0'
     # Substituindo as 'vírgulas' dos números por 'ponto'
     df_ultimo_dado['atual'] = df_ultimo_dado['atual'].str.replace(',', '.')
     df_ultimo_dado['projecao'] = df_ultimo_dado['projecao'].str.replace(',', '.')
@@ -152,7 +155,7 @@ def web_scraping_table(filename):
     # Abrindo o arquivo completo para atualizá-lo
     df_completo = pd.read_csv(f'csv_tratados/{filename}.csv',
                               sep=';',
-                              index_col='lancamento'
+                              index_col='Unnamed: 0'
                               )
     # Concatenando os dois dfs
     df_completo = pd.concat([df_completo, df_ultimo_dado], axis=0)
@@ -179,7 +182,10 @@ with DAG(
     web_scraping_table_task = PythonOperator(
         task_id='web_scraping_table',
         python_callable=web_scraping_table,
-        op_args=['pmi_industrial_ism']
+        op_kwargs={
+            'filename':'pmi_servicos',
+            'pmi_url':'https://br.investing.com/economic-calendar/services-pmi-1062'
+        }
     )
 
     close_task = DummyOperator(
