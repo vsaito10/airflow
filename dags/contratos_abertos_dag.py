@@ -23,12 +23,13 @@ def web_scraping_table():
     options.add_argument("--headless")
 
     driver = webdriver.Remote(
-        command_executor='http://172.18.0.3:4444',
+        command_executor='http://172.19.0.3:4444',
         options=options
     )
 
     driver.get(
-        'https://www2.bmf.com.br/pages/portal/bmfbovespa/lumis/lum-tipo-de-participante-ptBR.asp')
+        'https://www2.bmf.com.br/pages/portal/bmfbovespa/lumis/lum-tipo-de-participante-ptBR.asp'
+    )
     sleep(2)
 
     # Data de divulgação
@@ -42,7 +43,8 @@ def web_scraping_table():
 
     # As tabelas do site estão dentro desse XPATH
     tabelas = driver.find_elements(
-        By.XPATH, '//*[@id="divContainerIframeBmf"]/div[2]/div')
+        By.XPATH, '//*[@id="divContainerIframeBmf"]/div[2]/div'
+    )
 
     for tabela in tabelas:
         # Títulos das tabelas p/ descobrir em qual posição o 'MERCADO FUTURO DE DÓLAR' está
@@ -63,17 +65,17 @@ def web_scraping_table():
         ]
 
         # Nome das linhas da tabela
-        # 'Bancos', 'DTVM'S e Corretoras de Valores' e 'Outras Jurídicas Financeiras'
+        # 'Bancos' e 'DTVM'S e Corretoras de Valores'
         lst_players = [
             tabela.find_element(
                 By.XPATH, f'//*[@id="divContainerIframeBmf"]/div[2]/div/table[{posicao_dol_xpath}]/tbody/tr[{i}]/td[1]').text
-            for i in [2, 3, 4]
+            for i in [2, 3]
         ]
         # 'Investidor Institucional', 'Investidores Não Residentes', 'Pessoa Jurídica Não Financeira' e 'Pessoa Física'
         lst_players_2 = [
             tabela.find_element(
                 By.XPATH, f'//*[@id="divContainerIframeBmf"]/div[2]/div/table[{posicao_dol_xpath}]/tbody/tr[{i}]/td[1]/strong').text
-            for i in [5, 7, 9, 10]
+            for i in [4, 6, 8, 9]
         ]
         # Juntando as listas dos players
         lst_player_final = lst_players + lst_players_2
@@ -82,12 +84,12 @@ def web_scraping_table():
         lst_num_compra = [
             tabela.find_element(
                 By.XPATH, f'//*[@id="divContainerIframeBmf"]/div[2]/div/table[{posicao_dol_xpath}]/tbody/tr[{i}]/td[2]').text
-            for i in [2, 3, 4, 5, 7, 9, 10]
+            for i in [2, 3, 4, 6, 8, 9] 
         ]
         lst_num_venda = [
             tabela.find_element(
                 By.XPATH, f'//*[@id="divContainerIframeBmf"]/div[2]/div/table[{posicao_dol_xpath}]/tbody/tr[{i}]/td[4]').text
-            for i in [2, 3, 4, 5, 7, 9, 10]
+            for i in [2, 3, 4, 6, 8, 9] 
         ]
 
     # Criando um dicionário com os dados da coluna
