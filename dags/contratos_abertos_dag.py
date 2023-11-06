@@ -6,7 +6,6 @@ from time import sleep
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
-from bs4 import BeautifulSoup
 import pandas as pd
 import re
 
@@ -23,7 +22,7 @@ def web_scraping_table():
     options.add_argument("--headless")
 
     driver = webdriver.Remote(
-        command_executor='http://172.18.0.3:4444',
+        command_executor='http://172.20.0.3:4444',
         options=options
     )
 
