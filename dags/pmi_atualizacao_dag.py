@@ -18,6 +18,8 @@ PMI Serviços - https://br.investing.com/economic-calendar/services-pmi-1062
 PMI Industrial - https://br.investing.com/economic-calendar/manufacturing-pmi-829
 PMI ISM Não-Manufatura - https://br.investing.com/economic-calendar/ism-non-manufacturing-pmi-176
 PMI ISM Industrial - https://br.investing.com/economic-calendar/ism-manufacturing-pmi-173
+PMI Industrial China - https://br.investing.com/economic-calendar/chinese-manufacturing-pmi-594
+PMI Servicos - https://br.investing.com/economic-calendar/chinese-non-manufacturing-pmi-831
 
 Neste código:
 - Atualizar o ip do selenium remoto entrando em: http://localhost:4444/ui
@@ -46,7 +48,7 @@ def web_scraping_table(filename, pmi_url):
     options.add_argument("--incognito")
 
     driver = webdriver.Remote(
-        command_executor='http://172.19.0.3:4444',
+        command_executor='http://172.18.0.3:4444',
         options=options
     )
 
@@ -79,10 +81,12 @@ def web_scraping_table(filename, pmi_url):
         r"\b(serviços|industrial|pmi|ism|não-manufatura)\b", text_title)
     # Substituindo a palavra 'serviços' por 'servicos'
     if 'serviços' in match:
-        match[1] = match[1].replace('ç', 'c')
+        posicao_str = match.index('serviços')
+        match[posicao_str] = match[posicao_str].replace('ç', 'c')
     # Substituindo a palavra 'não-manufatura' por 'nao_manufatura'
     elif 'não-manufatura' in match:
-        match[2] = match[2].replace('ã', 'a').replace('-', '_')
+        posicao_str = match.index('não-manufatura')
+        match[posicao_str] = match[posicao_str].replace('ã', 'a').replace('-', '_')
     # Juntando as palavras ('services_pmi' ou 'manufacturing_pmi' ou 'pmi_industrial_ism' ou 'pmi_ism_nao_manufatura')
     text_title = "_".join(match).lower()
 
@@ -136,7 +140,7 @@ def web_scraping_table(filename, pmi_url):
     if (tipo_pmi == '176') or (tipo_pmi == '173'):
         ultimo_dado = df.iloc[-1]
 
-    elif (tipo_pmi == '1062') or (tipo_pmi == '829'):
+    elif (tipo_pmi == '1062') or (tipo_pmi == '829') or (tipo_pmi == '594') or (tipo_pmi == '831'):
         ultimo_dado = df.iloc[-2]
 
     # Criando um df apenas com o dado mais recente - para ficar no mesmo formato da tabela eu tenho que transpor (T)
@@ -170,7 +174,7 @@ with DAG(
     default_args=default_args,
     dag_id='pmi_atualizacao',
     start_date=datetime(2023, 8, 1),
-    schedule_interval='@daily',
+    schedule_interval='30 11,12 * * *',  # Roda as 11:30 e 12:30
     catchup=False
 ) as dag:
 
@@ -183,8 +187,8 @@ with DAG(
         task_id='web_scraping_table',
         python_callable=web_scraping_table,
         op_kwargs={
-            'filename':'pmi_servicos',
-            'pmi_url':'https://br.investing.com/economic-calendar/services-pmi-1062'
+            'filename':'china_pmi_industrial',
+            'pmi_url':'https://br.investing.com/economic-calendar/chinese-manufacturing-pmi-594'
         }
     )
 
@@ -194,3 +198,4 @@ with DAG(
     )
 
     init_task >> web_scraping_table_task >> close_task
+
