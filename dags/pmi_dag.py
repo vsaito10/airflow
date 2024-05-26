@@ -43,12 +43,12 @@ def web_scraping_table():
     options.add_argument("--incognito")
 
     driver = webdriver.Remote(
-        command_executor='http://172.19.0.3:4444',
+        command_executor='http://172.18.0.3:4444',
         options=options
     )
 
     # URL
-    url = 'https://br.investing.com/economic-calendar/services-pmi-1062'
+    url = 'https://br.investing.com/economic-calendar/manufacturing-pmi-829'
     tipo_pmi = re.search(r"-(\d+)$", url).group(1)
 
     driver.get(url)
@@ -87,10 +87,12 @@ def web_scraping_table():
     match = re.findall(r"\b(serviços|industrial|pmi|ism|não-manufatura)\b", text_title)
     # Substituindo a palavra 'serviços' por 'servicos'
     if 'serviços' in match:
-        match[1] = match[1].replace('ç', 'c')
+        posicao_str = match.index('serviços')
+        match[posicao_str] = match[posicao_str].replace('ç', 'c')
     # Substituindo a palavra 'não-manufatura' por 'nao_manufatura'
     elif 'não-manufatura' in match:
-        match[2] = match[2].replace('ã', 'a').replace('-', '_')
+        posicao_str = match.index('não-manufatura')
+        match[posicao_str] = match[posicao_str].replace('ã', 'a').replace('-', '_')
     # Juntando as palavras ('services_pmi' ou 'manufacturing_pmi' ou 'pmi_industrial_ism' ou 'pmi_ism_nao_manufatura')
     text_title = "_".join(match).lower()
 
@@ -147,11 +149,15 @@ def web_scraping_table():
         df = df.iloc[:]
         # Definindo coluna 'lancamento' como o index do df
         df = df.set_index('lancamento')
+        # Retirando o nome 'lancamento' do index
+        df.index.name = ''
 
-    elif (tipo_pmi == '1062') or (tipo_pmi == '829'):
+    elif (tipo_pmi == '1062') or (tipo_pmi == '829') or (tipo_pmi == '594') or (tipo_pmi == '831'):
         df = df.iloc[:-1]
         # Definindo coluna 'lancamento' como o index do df
         df = df.set_index('lancamento')
+        # Retirando o nome 'lancamento' do index
+        df.index.name = ''
 
     # Substituindo as 'vírgulas' dos números por 'ponto'
     df['atual'] = df['atual'].str.replace(',', '.')
